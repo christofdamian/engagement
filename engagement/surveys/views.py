@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.db import transaction
 from django.forms import modelformset_factory
 from django.utils import timezone
+from datetime import timedelta
 import random
 from organizations.models import Organization, OrganizationMembership
 from .models import Survey, Theme, Question, SurveyResponse, Answer
@@ -247,32 +248,108 @@ def survey_results(request, org_pk):
         '-response__completed_at', 'question__theme__order', 'question__order'
     )
     
+    # Calculate weekly date ranges (last 6 weeks)
+    today = timezone.now().date()
+    weekly_ranges = []
+    for i in range(6):
+        week_start = today - timedelta(days=today.weekday()) - timedelta(weeks=i)
+        week_end = week_start + timedelta(days=6)
+        weekly_ranges.append({
+            'start': week_start,
+            'end': week_end,
+            'label': f"Week {week_start.strftime('%m/%d')}"
+        })
+    weekly_ranges.reverse()  # Show oldest to newest
+    
     # Calculate some basic statistics
     total_responses = responses.count()
     if total_responses > 0:
         # Calculate average rating per question
         question_stats = {}
+        theme_stats = {}
+        
         for answer in answers:
             question_id = answer.question.id
+            theme_id = answer.question.theme.id
+            answer_date = answer.response.completed_at.date()
+            
+            # Question statistics
             if question_id not in question_stats:
                 question_stats[question_id] = {
                     'question': answer.question,
                     'ratings': [],
                     'total': 0,
-                    'count': 0
+                    'count': 0,
+                    'weekly_data': {week['label']: {'total': 0, 'count': 0, 'average': 0} for week in weekly_ranges}
                 }
             question_stats[question_id]['ratings'].append(answer.rating)
             question_stats[question_id]['total'] += answer.rating
             question_stats[question_id]['count'] += 1
+            
+            # Add to weekly data
+            for week in weekly_ranges:
+                if week['start'] <= answer_date <= week['end']:
+                    question_stats[question_id]['weekly_data'][week['label']]['total'] += answer.rating
+                    question_stats[question_id]['weekly_data'][week['label']]['count'] += 1
+                    break
+            
+            # Theme statistics
+            if theme_id not in theme_stats:
+                theme_stats[theme_id] = {
+                    'theme': answer.question.theme,
+                    'ratings': [],
+                    'total': 0,
+                    'count': 0,
+                    'questions': [],
+                    'weekly_data': {week['label']: {'total': 0, 'count': 0, 'average': 0} for week in weekly_ranges}
+                }
+            theme_stats[theme_id]['ratings'].append(answer.rating)
+            theme_stats[theme_id]['total'] += answer.rating
+            theme_stats[theme_id]['count'] += 1
+            
+            # Add to weekly data
+            for week in weekly_ranges:
+                if week['start'] <= answer_date <= week['end']:
+                    theme_stats[theme_id]['weekly_data'][week['label']]['total'] += answer.rating
+                    theme_stats[theme_id]['weekly_data'][week['label']]['count'] += 1
+                    break
+            
+            # Add question to theme if not already present
+            if answer.question not in theme_stats[theme_id]['questions']:
+                theme_stats[theme_id]['questions'].append(answer.question)
         
-        # Calculate averages
+        # Calculate averages (overall and weekly)
         for stats in question_stats.values():
             if stats['count'] > 0:
                 stats['average'] = round(stats['total'] / stats['count'], 1)
             else:
                 stats['average'] = 0
+            
+            # Calculate weekly averages
+            for week_data in stats['weekly_data'].values():
+                if week_data['count'] > 0:
+                    week_data['average'] = round(week_data['total'] / week_data['count'], 1)
+                else:
+                    week_data['average'] = 0
+                
+        for stats in theme_stats.values():
+            if stats['count'] > 0:
+                stats['average'] = round(stats['total'] / stats['count'], 1)
+            else:
+                stats['average'] = 0
+            
+            # Calculate weekly averages
+            for week_data in stats['weekly_data'].values():
+                if week_data['count'] > 0:
+                    week_data['average'] = round(week_data['total'] / week_data['count'], 1)
+                else:
+                    week_data['average'] = 0
+            
+            # Sort questions by order
+            stats['questions'].sort(key=lambda q: (q.order, q.id))
     else:
         question_stats = {}
+        theme_stats = {}
     
     context = {
         'organization': organization,
@@ -281,6 +358,8 @@ def survey_results(request, org_pk):
         'answers': answers,
         'total_responses': total_responses,
         'question_stats': question_stats.values(),
+        'theme_stats': sorted(theme_stats.values(), key=lambda x: x['theme'].order),
+        'weekly_ranges': weekly_ranges,
         'membership': membership,
     }
     return render(request, 'surveys/results.html', context)
