@@ -30,6 +30,15 @@
                         {% endif %}
                     </div>
                     
+                    <div class="mb-3">
+                        <label for="{{ form.questions_per_cycle.id_for_label }}" class="form-label">Questions Per Cycle</label>
+                        {{ form.questions_per_cycle }}
+                        <div class="form-text">How many questions to ask in each survey cycle (1-20)</div>
+                        {% if form.questions_per_cycle.errors %}
+                            <div class="text-danger">{{ form.questions_per_cycle.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
                     <div class="d-flex justify-content-between">
                         <a href="{% url 'organization_detail' organization.pk %}" class="btn btn-secondary">Cancel</a>
                         <button type="submit" class="btn btn-primary">Update Organization</button>

@@ -4,6 +4,7 @@ from django.contrib.auth.models import User
 
 class Organization(models.Model):
     name = models.CharField(max_length=200)
+    questions_per_cycle = models.PositiveIntegerField(default=5, help_text="Number of questions to ask in each survey cycle")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
