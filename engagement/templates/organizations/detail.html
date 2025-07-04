@@ -77,6 +77,9 @@
             <div class="card-body">
                 <p class="card-text">Survey and engagement features will be available here soon.</p>
                 <div class="d-grid gap-2">
+                    <a href="{% url 'organization_org_chart' organization.pk %}" class="btn btn-success">
+                        <i class="fas fa-sitemap"></i> View Org Chart
+                    </a>
                     <a href="{% url 'take_survey' organization.pk %}" class="btn btn-primary">
                         <i class="fas fa-clipboard-check"></i> Take Survey
                     </a>

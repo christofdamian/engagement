@@ -9,7 +9,7 @@ from surveys.models import Survey, Question, SurveyResponse, Answer
 
 
 class Command(BaseCommand):
-    help = 'Generate random users and survey responses for an organization'
+    help = 'Generate survey responses for existing organization users'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -18,10 +18,15 @@ class Command(BaseCommand):
             help='ID of the organization to generate data for'
         )
         parser.add_argument(
+            '--create-users',
+            action='store_true',
+            help='Create new users instead of using existing ones'
+        )
+        parser.add_argument(
             '--users',
             type=int,
             default=15,
-            help='Number of users to create (default: 15)'
+            help='Number of users to create (only used with --create-users, default: 15)'
         )
         parser.add_argument(
             '--weeks',
@@ -35,12 +40,19 @@ class Command(BaseCommand):
             default=3,
             help='Average number of responses per week (default: 3)'
         )
+        parser.add_argument(
+            '--clear-responses',
+            action='store_true',
+            help='Clear existing survey responses before generating new ones'
+        )
 
     def handle(self, *args, **options):
         organization_id = options['organization_id']
+        create_users = options['create_users']
         num_users = options['users']
         num_weeks = options['weeks']
         responses_per_week = options['responses_per_week']
+        clear_responses = options['clear_responses']
 
         try:
             organization = Organization.objects.get(id=organization_id)
@@ -73,17 +85,36 @@ class Command(BaseCommand):
         self.stdout.write(f'Questions per cycle: {organization.questions_per_cycle}')
 
         with transaction.atomic():
-            # Generate users
-            users = self.create_users(num_users, organization)
+            # Clear existing responses if requested
+            if clear_responses:
+                existing_responses = SurveyResponse.objects.filter(organization=organization)
+                response_count = existing_responses.count()
+                existing_responses.delete()
+                self.stdout.write(f'Cleared {response_count} existing survey responses')
+
+            # Get users (either create new ones or use existing)
+            if create_users:
+                users = self.create_users(num_users, organization)
+            else:
+                users = self.get_existing_users(organization)
+                if not users:
+                    self.stdout.write(
+                        self.style.ERROR(
+                            f'No users found for organization "{organization.name}". '
+                            f'Use --create-users to create new users or add users to the organization first.'
+                        )
+                    )
+                    return
             
             # Generate survey responses spread over time
             self.create_survey_responses(
                 users, organization, questions, num_weeks, responses_per_week
             )
 
+        user_action = "created" if create_users else "used existing"
         self.stdout.write(
             self.style.SUCCESS(
-                f'Successfully generated {num_users} users and survey responses '
+                f'Successfully {user_action} {len(users)} users and generated survey responses '
                 f'for "{organization.name}"'
             )
         )
@@ -137,6 +168,17 @@ class Command(BaseCommand):
                 self.stdout.write(f'Created {i + 1} users...')
 
         self.stdout.write(f'Created {len(users)} users total')
+        return users
+
+    def get_existing_users(self, organization):
+        """Get existing users from the organization"""
+        memberships = OrganizationMembership.objects.filter(
+            organization=organization
+        ).select_related('user')
+        
+        users = [membership.user for membership in memberships]
+        
+        self.stdout.write(f'Found {len(users)} existing users in organization')
         return users
 
     def create_survey_responses(self, users, organization, questions, num_weeks, responses_per_week):

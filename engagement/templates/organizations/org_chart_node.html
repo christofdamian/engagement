@@ -1,0 +1,32 @@
+{% load survey_extras %}
+
+<div class="org-node level-{% if level <= 4 %}{{ level }}{% else %}higher{% endif %}">
+    {% if level > 0 %}
+        <div class="connection-line"></div>
+    {% endif %}
+    
+    <div class="member-info">
+        <div class="member-details">
+            <h5>{{ node.membership.user.get_full_name|default:node.membership.user.username }}</h5>
+            {% if node.membership.title %}
+                <p><strong>{{ node.membership.title }}</strong></p>
+            {% endif %}
+            <p>{{ node.membership.user.email }}</p>
+            {% if node.membership.reports_to %}
+                <p><small>Reports to: {{ node.membership.reports_to.user.get_full_name|default:node.membership.reports_to.user.username }}</small></p>
+            {% endif %}
+        </div>
+        <div class="role-info">
+            <span class="role-badge role-{{ node.membership.role }}">{{ node.membership.get_role_display }}</span>
+        </div>
+    </div>
+    
+    {% if node.children %}
+        <div class="direct-reports mt-3">
+            <h6>Direct Reports ({{ node.children|length }})</h6>
+            {% for child in node.children %}
+                {% include 'organizations/org_chart_node.html' with node=child level=level|add:1 %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>

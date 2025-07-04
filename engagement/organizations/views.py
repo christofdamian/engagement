@@ -64,3 +64,50 @@ def organization_edit(request, pk):
         'form': form,
         'organization': organization
     })
+
+
+@login_required
+def organization_org_chart(request, pk):
+    organization = get_object_or_404(Organization, pk=pk)
+    membership = get_object_or_404(OrganizationMembership, user=request.user, organization=organization)
+    
+    def build_hierarchy(memberships):
+        hierarchy = {}
+        for membership in memberships:
+            if membership.reports_to is None:
+                if 'top_level' not in hierarchy:
+                    hierarchy['top_level'] = []
+                hierarchy['top_level'].append({
+                    'membership': membership,
+                    'children': []
+                })
+            else:
+                parent_id = membership.reports_to.id
+                if parent_id not in hierarchy:
+                    hierarchy[parent_id] = []
+                hierarchy[parent_id].append({
+                    'membership': membership,
+                    'children': []
+                })
+        
+        def populate_children(node):
+            membership_id = node['membership'].id
+            if membership_id in hierarchy:
+                node['children'] = hierarchy[membership_id]
+                for child in node['children']:
+                    populate_children(child)
+        
+        top_level = hierarchy.get('top_level', [])
+        for node in top_level:
+            populate_children(node)
+        
+        return top_level
+    
+    all_memberships = OrganizationMembership.objects.filter(organization=organization).select_related('user', 'reports_to')
+    org_chart = build_hierarchy(all_memberships)
+    
+    return render(request, 'organizations/org_chart.html', {
+        'organization': organization,
+        'org_chart': org_chart,
+        'membership': membership
+    })

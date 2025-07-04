@@ -25,6 +25,8 @@ class OrganizationMembership(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     organization = models.ForeignKey(Organization, on_delete=models.CASCADE)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='member')
+    title = models.CharField(max_length=100, blank=True, help_text="Job title or position")
+    reports_to = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='direct_reports')
     joined_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -32,3 +34,11 @@ class OrganizationMembership(models.Model):
     
     def __str__(self):
         return f"{self.user.email} - {self.organization.name} ({self.role})"
+    
+    def get_all_subordinates(self):
+        """Get all subordinates (direct and indirect reports)"""
+        subordinates = []
+        for direct_report in self.direct_reports.all():
+            subordinates.append(direct_report)
+            subordinates.extend(direct_report.get_all_subordinates())
+        return subordinates
