@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Survey Results - {{ organization.name }} - Engagement Platform{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>Survey Results - {{ organization.name }}</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'organization_list' %}">Organizations</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'organization_detail' organization.pk %}">{{ organization.name }}</a></li>
+                <li class="breadcrumb-item active">Survey Results</li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        <a href="{% url 'organization_detail' organization.pk %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Organization
+        </a>
+    </div>
+</div>
+
+{% if total_responses > 0 %}
+    <!-- Summary Statistics -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-primary">{{ total_responses }}</h3>
+                    <p class="mb-0">Total Responses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-info">{{ answers.count }}</h3>
+                    <p class="mb-0">Total Answers</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="text-success">{{ question_stats|length }}</h3>
+                    <p class="mb-0">Questions Answered</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Averages -->
+    {% if question_stats %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Question Averages</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Theme</th>
+                                <th>Question</th>
+                                <th>Responses</th>
+                                <th>Average Rating</th>
+                                <th>Rating Bar</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for stat in question_stats %}
+                                <tr>
+                                    <td><span class="badge bg-secondary">{{ stat.question.theme.name }}</span></td>
+                                    <td>{{ stat.question.text|truncatewords:10 }}</td>
+                                    <td>{{ stat.count }}</td>
+                                    <td>
+                                        <strong>{{ stat.average }}/10</strong>
+                                    </td>
+                                    <td>
+                                        <div class="progress" style="height: 20px;">
+                                            <div class="progress-bar 
+                                                {% if stat.average >= 8 %}bg-success
+                                                {% elif stat.average >= 6 %}bg-warning
+                                                {% else %}bg-danger{% endif %}" 
+                                                role="progressbar" 
+                                                style="width: {{ stat.average|floatformat:0 }}0%">
+                                                {{ stat.average }}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Individual Responses -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Individual Responses</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>User</th>
+                            <th>Theme</th>
+                            <th>Question</th>
+                            <th>Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for answer in answers %}
+                            <tr>
+                                <td>{{ answer.response.completed_at|date:"M d, Y g:i A" }}</td>
+                                <td>{{ answer.response.user.email }}</td>
+                                <td><span class="badge bg-secondary">{{ answer.question.theme.name }}</span></td>
+                                <td>{{ answer.question.text|truncatewords:8 }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if answer.rating >= 8 %}bg-success
+                                        {% elif answer.rating >= 6 %}bg-warning
+                                        {% else %}bg-danger{% endif %}">
+                                        {{ answer.rating }}/10
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+{% else %}
+    <div class="text-center">
+        <div class="card">
+            <div class="card-body">
+                <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                <h5 class="card-title">No Survey Responses Yet</h5>
+                <p class="card-text">No one has completed the survey for this organization yet.</p>
+                <a href="{% url 'take_survey' organization.pk %}" class="btn btn-primary">
+                    Take Survey
+                </a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
