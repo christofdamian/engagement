@@ -67,9 +67,9 @@
             <div class="card-body">
                 <p class="card-text">Survey and engagement features will be available here soon.</p>
                 <div class="d-grid gap-2">
-                    <button class="btn btn-outline-primary" disabled>
-                        <i class="fas fa-poll"></i> Create Survey
-                    </button>
+                    <a href="{% url 'survey_detail' organization.pk %}" class="btn btn-outline-primary">
+                        <i class="fas fa-poll"></i> Manage Survey
+                    </a>
                     <button class="btn btn-outline-info" disabled>
                         <i class="fas fa-chart-bar"></i> View Analytics
                     </button>

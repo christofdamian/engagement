@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Survey - {{ organization.name }} - Engagement Platform{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>{{ organization.name }} Survey</h2>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'organization_list' %}">Organizations</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'organization_detail' organization.pk %}">{{ organization.name }}</a></li>
+                <li class="breadcrumb-item active">Survey</li>
+            </ol>
+        </nav>
+    </div>
+    <div>
+        {% if membership.role == 'owner' or membership.role == 'admin' %}
+            {% if survey %}
+                <a href="{% url 'survey_edit' organization.pk %}" class="btn btn-outline-primary">
+                    <i class="fas fa-edit"></i> Edit Survey
+                </a>
+                <a href="{% url 'theme_create' organization.pk %}" class="btn btn-success">
+                    <i class="fas fa-plus"></i> Add Theme
+                </a>
+            {% else %}
+                <a href="{% url 'survey_create' organization.pk %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create Survey
+                </a>
+            {% endif %}
+        {% endif %}
+    </div>
+</div>
+
+{% if survey %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>{{ survey.title }}</h5>
+            <span class="badge bg-{% if survey.is_active %}success{% else %}secondary{% endif %}">
+                {% if survey.is_active %}Active{% else %}Inactive{% endif %}
+            </span>
+        </div>
+        <div class="card-body">
+            {% if survey.description %}
+                <p class="card-text">{{ survey.description }}</p>
+            {% endif %}
+            <small class="text-muted">
+                Created: {{ survey.created_at|date:"M d, Y" }} | 
+                Updated: {{ survey.updated_at|date:"M d, Y" }}
+            </small>
+        </div>
+    </div>
+
+    {% if survey.themes.all %}
+        <div class="row">
+            {% for theme in survey.themes.all %}
+                <div class="col-md-6 mb-4">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">{{ theme.name }}</h6>
+                            {% if membership.role == 'owner' or membership.role == 'admin' %}
+                                <a href="{% url 'question_create' organization.pk theme.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-plus"></i> Add Question
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div class="card-body">
+                            {% if theme.description %}
+                                <p class="card-text text-muted">{{ theme.description }}</p>
+                            {% endif %}
+                            
+                            {% if theme.questions.all %}
+                                <div class="list-group list-group-flush">
+                                    {% for question in theme.questions.all %}
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-1">{{ question.text }}</p>
+                                                    <small class="text-muted">
+                                                        Rating (1-10) • Optional
+                                                    </small>
+                                                </div>
+                                                <span class="badge bg-light text-dark">{{ question.order }}</span>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted">No questions added yet.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">No Themes Yet</h5>
+                    <p class="card-text">Add themes to organize your survey questions by topic.</p>
+                    {% if membership.role == 'owner' or membership.role == 'admin' %}
+                        <a href="{% url 'theme_create' organization.pk %}" class="btn btn-primary">Add First Theme</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+{% else %}
+    <div class="text-center">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">No Survey Yet</h5>
+                <p class="card-text">Create a survey to start collecting engagement feedback from your team.</p>
+                {% if membership.role == 'owner' or membership.role == 'admin' %}
+                    <a href="{% url 'survey_create' organization.pk %}" class="btn btn-primary">Create Survey</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
