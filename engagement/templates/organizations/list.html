@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}My Organizations - Engagement Platform{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>My Organizations</h2>
+    <a href="{% url 'organization_create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Create Organization
+    </a>
+</div>
+
+{% if memberships %}
+    <div class="row">
+        {% for membership in memberships %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ membership.organization.name }}</h5>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                Role: <span class="badge bg-{% if membership.role == 'owner' %}success{% elif membership.role == 'admin' %}warning{% else %}secondary{% endif %}">{{ membership.get_role_display }}</span>
+                            </small>
+                        </p>
+                        <p class="card-text">
+                            <small class="text-muted">Joined: {{ membership.joined_at|date:"M d, Y" }}</small>
+                        </p>
+                        <a href="{% url 'organization_detail' membership.organization.pk %}" class="btn btn-outline-primary">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="text-center">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">No Organizations Yet</h5>
+                <p class="card-text">You haven't joined any organizations yet. Create your first organization to get started!</p>
+                <a href="{% url 'organization_create' %}" class="btn btn-primary">Create Organization</a>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

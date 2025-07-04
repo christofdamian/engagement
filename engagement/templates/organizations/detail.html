@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{{ organization.name }} - Engagement Platform{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2>{{ organization.name }}</h2>
+        <p class="text-muted">
+            Your role: <span class="badge bg-{% if membership.role == 'owner' %}success{% elif membership.role == 'admin' %}warning{% else %}secondary{% endif %}">{{ membership.get_role_display }}</span>
+        </p>
+    </div>
+    <div>
+        {% if membership.role == 'owner' or membership.role == 'admin' %}
+            <a href="{% url 'organization_edit' organization.pk %}" class="btn btn-outline-primary">
+                <i class="fas fa-edit"></i> Edit
+            </a>
+        {% endif %}
+        <a href="{% url 'organization_list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Organizations
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Organization Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <strong>Name:</strong>
+                    </div>
+                    <div class="col-sm-9">
+                        {{ organization.name }}
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-3">
+                        <strong>Created:</strong>
+                    </div>
+                    <div class="col-sm-9">
+                        {{ organization.created_at|date:"M d, Y g:i A" }}
+                    </div>
+                </div>
+                <hr>
+                <div class="row">
+                    <div class="col-sm-3">
+                        <strong>Last Updated:</strong>
+                    </div>
+                    <div class="col-sm-9">
+                        {{ organization.updated_at|date:"M d, Y g:i A" }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">Survey and engagement features will be available here soon.</p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary" disabled>
+                        <i class="fas fa-poll"></i> Create Survey
+                    </button>
+                    <button class="btn btn-outline-info" disabled>
+                        <i class="fas fa-chart-bar"></i> View Analytics
+                    </button>
+                    <button class="btn btn-outline-secondary" disabled>
+                        <i class="fas fa-users"></i> Manage Members
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
